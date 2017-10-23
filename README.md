@@ -12,9 +12,12 @@ Next you have also to install matter-js (2D physics engine)  to be run on the se
 
 If you start the server you will get an error like this:
 
-ReferenceError: HTMLElement is not defined.
+"ReferenceError: HTMLElement is not defined."
 
-To correct that you have to change some lines in matter.js file located at _your_project_dir_\node_modules\matter-js\build\matter.js:
+To correct this error you have to change a function in the matter.js file located at:
+
+"_your_project_dir_\node_modules\matter-js\build\matter.js:"
+
 Next go to line 4390 and change the function:
 
 ```javascript
@@ -33,6 +36,7 @@ Common.isElement = function(obj) {
     
 Now you are ready to start the server! To do this type:
 > npm start
+
 Your server should start and should be listening for clients on the port 25565
 
 ## How to run the client
