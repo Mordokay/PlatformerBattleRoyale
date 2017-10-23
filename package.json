@@ -1,0 +1,24 @@
+{
+  "name": "battleroyaleplatformer",
+  "version": "1.0.0",
+  "description": " Very basic multiplayer online game example made with Matter.js, P5, Node.js and Socket.io",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "Phaser",
+    "Multiplayer",
+    "game",
+    "Node.js",
+    "socket.io"
+  ],
+  "author": "Pedro Saldanha",
+  "license": "MIT",
+  "homepage": "https://www.mordokay.com",
+  "dependencies": {
+    "express": "^4.15.2",
+    "matter": "^0.2.0",
+    "socket.io": "^1.7.3"
+  }
+}
