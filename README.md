@@ -1,5 +1,7 @@
 # PlatformerBattleRoyale
 
+## Server side configuration:
+
 To run this project first you have to instal the necessary node.js modules.
 
 To install node modules type
@@ -15,18 +17,25 @@ ReferenceError: HTMLElement is not defined.
 To correct that you have to change some lines in matter.js file located at _your_project_dir_\node_modules\matter-js\build\matter.js:
 Next go to line 4390 and change the function:
 
+```javascript
 Common.isElement = function(obj) {
         return obj instanceof HTMLElement;
     };
-    
+```
+
 To:
 
+```javascript
 Common.isElement = function(obj) {
-        //return obj instanceof HTMLElement;
         return typeof HTMLElement !== 'undefined' && obj instanceof HTMLElement;
     };
+```
     
-No wyou can start the server by typing:
+Now you are ready to start the server! To do this type:
 > npm start
+Your server should start and should be listening for clients on the port 25565
 
-To run the client
+## How to run the client
+
+To run the client simply go to your browser and type the url:
+http://localhost:25565/
