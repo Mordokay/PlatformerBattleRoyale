@@ -3,9 +3,13 @@ var Game = {};
 var dinamicObjects = [];
 var staticObjects = [];
 
+var cameraX = 0;
+var cameraY = 0;
+
 function setup() {
   Client.askNewPlayer();
-  createCanvas(400, 400);
+  canvas = createCanvas(400, 400);
+  frameRate(30);
 }
 
 function keyPressed() {
@@ -15,73 +19,65 @@ function keyPressed() {
 }
 
 function mouseClicked() {
-  var data = {x: mouseX, y: mouseY};
+  var data = {x: mouseX + cameraX, y: mouseY + cameraY};
   Client.sendMouseClick(data);
 }
 
 function drawCircle(data){
-  var posX = data.posX;
-  var posY = data.posY;
-  var angle = data.angle;
-  var r = data.r;
-
   push();
-  translate(posX, posY);
-  rotate(angle);
+  translate(data.x, data.y);
   rectMode(CENTER);
   strokeWeight(1);
   stroke(255);
   fill(127);
-  ellipse(0, 0, r * 2);
+  ellipse(0, 0, data.r * 2);
   pop();
 }
 
 function drawBox(data){
-  var posX = data.posX;
-  var posY = data.posY;
-  var angle = data.angle;
-  var w = data.w;
-  var h = data.h;
-
   push();
-  translate(posX, posY);
-  rotate(angle);
+  translate(data.x, data.y);
+  rotate(data.a);
   rectMode(CENTER);
   strokeWeight(1);
   noStroke();
   fill(0);
-  rect(0, 0, w, h);
+  rect(0, 0, data.w, data.h);
   pop();
 }
 
 function draw() {
   background(255, 204, 0);
-  //console.log(dinamicObjects.length);
+/*
+  if(keyIsDown(LEFT_ARROW)){
+    cameraX -= 10;
+  }
+  if(keyIsDown(RIGHT_ARROW)){
+    cameraX += 10;
+  }
+  if(keyIsDown(UP_ARROW)){
+    cameraY -= 10;
+  }
+  if(keyIsDown(DOWN_ARROW)){
+    cameraY += 10;
+  }
+
+  if(dinamicObjects.length > 0){
+    camera(dinamicObjects[0].posX - (width / 2), dinamicObjects[0].posY - (height / 2), 0);  
+  }
+  else{
+    camera(cameraX, cameraY, 0);
+  }
+
+  console.log("CameraX: " + cameraX + " CameraY: " + cameraY);
+*/
 
   for (var i = 0; i < dinamicObjects.length; i++) {
     drawCircle(dinamicObjects[i]);
   }
   for (var i = 0; i < staticObjects.length; i++) {
-    console.log(staticObjects[0].posX + " , " +  staticObjects[0].posY + " W,H: " + staticObjects[0].w + " , " + staticObjects[0].h);
     drawBox(staticObjects[i]);
   }
-
-  /*
-  circles.push(new Circle(200, 50, random(5, 10)));
-  Engine.update(engine);
-
-  for (var i = 0; i < circles.length; i++) {
-    circles[i].show();
-    if (circles[i].isOffScreen()) {
-      circles[i].removeFromWorld();
-      circles.splice(i, 1);
-      i--;
-    }
-  }
-  for (var i = 0; i < boundaries.length; i++) {
-    boundaries[i].show();
-  }
-  */
 }
 
 Game.addNewPlayer = function(data){

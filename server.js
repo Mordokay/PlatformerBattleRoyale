@@ -23,6 +23,8 @@ server.listen(process.env.PORT || 25565,function(){
 
 var dinamicObjects = [];
 var staticObjects = [];
+var players = [];
+
 var width = 400;
 var height = 400;
 
@@ -34,32 +36,19 @@ var Engine = Matter.Engine,
 var engine = Engine.create();
 var world = engine.world;
 
-//var boxA = Bodies.rectangle(400, 200, 80, 80);
-//var boxB = Bodies.rectangle(450, 50, 80, 80);
-//var ground = Bodies.rectangle(400, 610, 810, 60, { isStatic: true });
-
-//World.add(engine.world, [boxA, boxB, ground]);
-
-//console.log('boxA', boxA.position);
-//console.log('boxB', boxB.position);
-
 Start();
 setInterval(function(){Update();}, 1000/30);
 
 function Start(){
-    staticObjects.push(new Boundary(150, 200, width * 0.6, 20, 0.3));
-    staticObjects.push(new Boundary(250, 300, width * 0.6, 20, -0.3));
+    console.log("Start()");
 
-    //socket.emit('servermessage', "This is the Start()");
-    console.log("This is the Start()");
+    staticObjects.push(new Box(150, 100, width * 0.6, 20, 0.3, true));
+    staticObjects.push(new Box(250, 200, width * 0.6, 20, -0.3, true));
+    staticObjects.push(new Box(200, 400, 350, 100, 0, true));
 }
 
 function Update(){
-    var message = Math.floor(Math.random() * 10000);
-    //socket.emit('servermessage', message + " This is the Update()");
-    //console.log("dinamicObjects.length: " + dinamicObjects.length);
     for(var i = 0; i < dinamicObjects.length; i++){
-        //console.log(dinamicObjects[i].body.position);
         if (dinamicObjects[i].isOffScreen()) {
           dinamicObjects[i].removeFromWorld();
           dinamicObjects.splice(i, 1);
@@ -95,6 +84,11 @@ io.on('connection',function(socket){
         io.emit('staticObjects', myStaticObjects);
 
 /*
+        var result = myArray.filter(function(v) {
+          return v.id === '45'; // Filter out the appropriate one
+        })[0].foo;
+        */
+/*
         var clients = io.sockets.clients(); // This returns an array with all connected clients
         for ( i = 0; i < clients.length; i++ ) {
             clients[i].emit('newplayer', socket.player);
@@ -126,7 +120,7 @@ io.on('connection',function(socket){
     });
     
     socket.on('mouseClick', function(data){
-        dinamicObjects.push(new Circle(data.x, data.y, randomIntFromInterval(5, 10)));
+        dinamicObjects.push(new Circle(data.x, data.y, randomIntFromInterval(5, 10), false));
         //io.sockets.emit('getallplayers', getAllPlayers());
         console.log("Received player " + socket.player.id + " mouse click at Pos: ( " + data.x + " , " + data.y + " )");
     });
@@ -155,10 +149,11 @@ function randomIntFromInterval(min,max)
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 
-function Circle(x, y, r) {
+function Circle(x, y, r, static) {
   var options = {
     friction: 0,
-    restitution: 0.95
+    restitution: 0.95,
+    isStatic: static
   }
   this.body = Bodies.circle(x, y, r, options);
   this.r = r;
@@ -169,27 +164,33 @@ function Circle(x, y, r) {
     return (pos.y > height + 100);
   }
 
+  this.canSeePlayer = function(playerPos) {
+    var pos = this.body.position;
+    return (abs(pos.x - playerPos.x) < 100 &&  abs(pos.y - playerPos.y) < 100);
+  }
+
+
   this.removeFromWorld = function() {
     World.remove(world, this.body);
   }
 
   this.getData = function(){
     var data = {
-      posX: this.body.position.x,
-      posY: this.body.position.y,
-      angle: this.body.angle,
+      t: "circle",
+      x: this.body.position.x,
+      y: this.body.position.y,
       r: this.r
     }
     return data;
   }
 }
 
-function Boundary(x, y, w, h, a) {
+function Box(x, y, w, h, a, static) {
   var options = {
     friction: 0,
     restitution: 0.95,
     angle: a,
-    isStatic: true
+    isStatic: static
   }
   this.body = Bodies.rectangle(x, y, w, h, options);
   this.w = w;
@@ -198,11 +199,12 @@ function Boundary(x, y, w, h, a) {
 
   this.getData = function(){
     var data = {
-      posX: this.body.position.x,
-      posY: this.body.position.y,
+      t: "box",
+      x: this.body.position.x,
+      y: this.body.position.y,
       w: this.w,
       h: this.h,
-      angle: this.body.angle,
+      a: this.body.angle,
     }
     return data;
   }

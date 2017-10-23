@@ -8,12 +8,11 @@ Client.socket.on('connect_error', function() {
 
 //This is what the client sends to the server
 Client.sendTest = function(){
-	console.log("Some log for chrome!!!");
     Client.socket.emit('test');
 };
 
 Client.sendMouseClick = function(data){
-	console.log("Sent mouse click at Pos: ( " + data.x + " , " + data.y + " )");
+	//console.log("Sent mouse click at Pos: ( " + data.x + " , " + data.y + " )");
     Client.socket.emit('mouseClick', data);
 };
 
