@@ -19,6 +19,7 @@
   "dependencies": {
     "express": "^4.15.2",
     "matter": "^0.2.0",
+    "matter-js": "^0.13.0",
     "socket.io": "^1.7.3"
   }
 }

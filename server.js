@@ -59,6 +59,9 @@ function Update(){
           i--;
         }
     }
+    for(var i = 0; i < players.length; i++){
+      players[i].setVelocity();
+    }
     Engine.update(engine, 1000 / 60);
 }
 
