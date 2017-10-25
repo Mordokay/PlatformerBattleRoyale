@@ -62,7 +62,7 @@ function Start(){
     staticObjects.push(new Box(500, 600, 120, 50, 0, true));
 
     var array = ["9.2 85.7", "2.1 83.1", "29.4 83.7"];
-    weirdShapes.push(new objectFromVertices([letterS, letterV, letterG], 100, 100, 0, true));
+    weirdShapes.push(new objectFromVertices([letterS, letterV, letterG], -500, 300, 0, true));
 
     weirdShapes.push(new objectFromVertices([platform], -500, 750, 0, true));
     //weirdShapes.push(new objectFromVertices(letterV, 100, 100, 0, true));

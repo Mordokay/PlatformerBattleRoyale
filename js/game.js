@@ -1,5 +1,12 @@
 var Game = {};
 
+var images = [];
+var totalImages = 40;
+var counterImage = 0;
+var loadingImage = false;
+var loading = true;
+var currentImageIndex = 0;
+
 var dinamicObjects = [];
 var staticObjects = [];
 var playerObjects = [];
@@ -19,7 +26,27 @@ function setup() {
   Client.askNewPlayer();
   //canvas = createCanvas(800, 800);
   canvas = createCanvas(windowWidth,windowHeight);
-  frameRate(30);
+
+  //Should I force the frame rate?
+  //frameRate(60);
+
+  for (var i = 1; i <= totalImages; i++) {
+    loadImageElement("assets/images/anim" + i + ".png", 300, 300);
+  }
+}
+
+function loadImageElement(filename, imageWidth, imageHeight) {
+  loadImage(filename, imageLoaded);
+
+  function imageLoaded(image) {
+    console.log(filename);
+    image.resize(imageWidth, imageHeight);
+    images.push(image);
+    counterImage++;
+    if (counterImage == totalImages) {
+      loadingImage = true;
+    }
+  }
 }
 
 function keyTyped() {
@@ -113,9 +140,11 @@ function drawShape(shapeString, data){
   push();
   translate(data.x + data.shiftX, data.y + data.shiftY);
   rotate(data.a);
-  //scale (2);
 
-  stroke(255, 0, 0);
+  strokeWeight(5);
+  stroke(0, 100, 100);
+  fill(200, 20, 20);
+
   myVertices = shapeString.split(", ");
   beginShape();
   var pos = [];
@@ -146,39 +175,62 @@ function polygon(x, y, radius, npoints) {
   endShape(CLOSE);
 }
 
+function drawAnimatedStickMan(x, y){
+  push();
+  translate(x, y);
+  if(currentImageIndex == images.length){
+    currentImageIndex = 0;
+  }
+  image(images[currentImageIndex], 0, 0);
+  currentImageIndex++;
+  polygon(0, 0, 5, 8);
+  pop();
+}
+
 function draw() {
   background(255, 204, 0);
-  //console.log("playerPos: " + playerPos.x + " , " + playerPos.y);
-  camera(playerPos.x - (width / 2), playerPos.y - (height / 2), 0);
 
-  for (var i = 0; i < dinamicObjects.length; i++) {
-    drawCircle(dinamicObjects[i]);
-  }
-  for (var i = 0; i < staticObjects.length; i++) {
-    drawBox(staticObjects[i]);
-  }
-  for (var i = 0; i < playerObjects.length; i++) {
-    drawPlayer(playerObjects[i]);
+  if (loadingImage) {
+    loading = false;
   }
 
-  
+  if(!loading){
+    //console.log("playerPos: " + playerPos.x + " , " + playerPos.y);
+    camera(playerPos.x - (width / 2), playerPos.y - (height / 2), 0);
 
-  var myData = {x: 100, y: 100, shiftX: -138, shiftY: -64, a: 0};
-  drawShape(letterS, myData);
-  polygon(myData.x, myData.y, 10, 8);
+    for (var i = 0; i < dinamicObjects.length; i++) {
+      drawCircle(dinamicObjects[i]);
+    }
+    for (var i = 0; i < staticObjects.length; i++) {
+      drawBox(staticObjects[i]);
+    }
+    for (var i = 0; i < playerObjects.length; i++) {
+      drawPlayer(playerObjects[i]);
+    }
 
-  var myData = {x: 100, y: 100, shiftX: -138, shiftY: -64, a: 0};
-  drawShape(letterV, myData);
-  polygon(myData.x, myData.y, 10, 8);
+    var myData = {x: -500, y: 300, shiftX: -138, shiftY: -64, a: 0};
+    drawShape(letterS, myData);
 
-  var myData = {x: 100, y: 100, shiftX: -138, shiftY: -64, a: 0};
-  drawShape(letterG, myData);
-  polygon(myData.x, myData.y, 10, 8);
+    var myData = {x: -500, y: 300, shiftX: -138, shiftY: -64, a: 0};
+    drawShape(letterV, myData);
 
-  var myData = {x: -500, y: 750, shiftX: -258, shiftY: -50, a: 0};
-  drawShape(platform, myData);
-  polygon(myData.x, myData.y, 10, 8);
+    var myData = {x: -500, y: 300, shiftX: -138, shiftY: -64, a: 0};
+    drawShape(letterG, myData);
 
+    var myData = {x: -500, y: 750, shiftX: -258, shiftY: -50, a: 0};
+    drawShape(platform, myData);
+    polygon(myData.x, myData.y, 10, 8);
+
+    drawAnimatedStickMan(100, 600);
+
+    drawAnimatedStickMan(-500, 400);
+
+    drawAnimatedStickMan(500, 500);
+  }
+}
+
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
 }
 
 Game.setPlayerId = function(id){
