@@ -17,12 +17,12 @@ Next go to the file matter.js located on "_your_project_dir_\node_modules\matter
 Change the line 6483 from:
 
 ```javascript
-var decomp = _dereq_('poly-decomp/build/decomp.js');
+var decomp = (typeof window !== "undefined" ? window['decomp'] : typeof global !== "undefined" ? global['decomp'] : null);
 ```
  To:
  
 ```javascript
-var decomp = (typeof window !== "undefined" ? window['decomp'] : typeof global !== "undefined" ? global['decomp'] : null);
+var decomp = _dereq_('poly-decomp/build/decomp.js');
 ```
 
 Also change the function on line 4390 from:
