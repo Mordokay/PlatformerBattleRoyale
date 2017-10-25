@@ -22,23 +22,34 @@ server.listen(process.env.PORT || 25565,function(){
 var dinamicObjects = [];
 var staticObjects = [];
 var players = [];
+var weirdShapes = [];
 
 var width = 800;
 var height = 800;
+
+var massSegment = 0.2;
 
 var Engine = Matter.Engine,
   // Render = Matter.Render,
   World = Matter.World,
   Body = Matter.Body,
+  Common = Matter.Common,
+  Vertices = Matter.Vertices,
+  Svg = Matter.Svg,
   Bodies = Matter.Bodies;
 
 var engine = Engine.create();
 var world = engine.world;
+var letterS = "9.170 85.682, 29.420 83.713, 36.838 98.690, 51.920 103.471, 67.072 99.217, 72.170 89.268, 70.025 83.045, 62.537 78.580, 45.873 74.080, 22.389 63.885, 12.897 43.143, 17.361 28.412, 30.229 17.971, 50.514 14.385, 79.729 22.893, 90.029 45.604, 69.217 46.518, 63.486 35.092, 50.303 31.611, 36.100 35.338, 32.795 41.736, 35.889 47.994, 55.014 54.885, 77.479 62.303, 88.869 72.779, 92.983 89.197, 88.061 105.791, 74.139 117.287, 51.709 121.049, 21.686 112.014, 9.170 85.682";
+var letterV = "136.928 119.221, 100.084 16.143, 122.654 16.143, 148.740 92.432, 173.983 16.143, 196.061 16.143, 159.147 119.221";
+var letterG = "254.772 81.322, 254.772 63.955, 299.631 63.955, 299.631 105.018, 280.682 116.162, 255.545 120.979, 227.350 114.193, 209.279 94.787, 203.233 67.330, 209.983 38.713, 229.740 19.518, 254.420 14.385, 284.408 22.436, 298.295 44.690, 277.623 48.557, 269.432 36.568, 254.420 32.174, 232.729 40.822, 224.678 66.486, 232.834 94.014, 254.209 103.190, 267.322 100.623, 278.608 94.400, 278.608 81.322";
+var platform = "77.508 -45.105, 51.333 -38.091, 34.251 -21.010, 21.767 0.614, 14.443 27.948, 14.443 49.508, 14.443 80.512, 20.217 102.062, 30.479 119.836, 49.031 138.388, 71.851 144.503, 446.875 144.503, 473.911 137.258, 486.434 115.567, 494.291 86.245, 494.291 58.061, 494.291 24.920, 486.630 -3.674, 472.135 -28.779, 451.117 -40.914, 424.728 -47.985";
 
 Start();
 setInterval(function(){Update();}, 1000/60);
 
 function Start(){
+
     console.log("Start()");
     world.gravity.y = 1.8;
     console.log("world.gravity " + world.gravity.y);
@@ -49,6 +60,14 @@ function Start(){
     staticObjects.push(new Box(-100, 600, 600, 50, 0, true));
     staticObjects.push(new Box(400, 500, 80, 50, 0, true));
     staticObjects.push(new Box(500, 600, 120, 50, 0, true));
+
+    var array = ["9.2 85.7", "2.1 83.1", "29.4 83.7"];
+    weirdShapes.push(new objectFromVertices([letterS, letterV, letterG], 100, 100, 0, true));
+
+    weirdShapes.push(new objectFromVertices([platform], -500, 750, 0, true));
+    //weirdShapes.push(new objectFromVertices(letterV, 100, 100, 0, true));
+    //weirdShapes.push(new objectFromVertices(letterG, 100, 100, 0, true));
+
 }
 
 function Update(){
@@ -136,8 +155,8 @@ io.on('connection',function(socket){
     });
     
     socket.on('mouseClick', function(data){
-        dinamicObjects.push(new Circle(data.x, data.y, randomIntFromInterval(5, 10), false));
-        console.log("Received player " + socket.player.id + " mouse click at Pos: ( " + data.x + " , " + data.y + " )");
+        dinamicObjects.push(new Circle(data.x, data.y, randomIntFromInterval(4, 6), false));
+        //console.log("Received player " + socket.player.id + " mouse click at Pos: ( " + data.x + " , " + data.y + " )");
     });
 
     //L_DOWN  L_UP  R_DOWN  R_UP  Jsss
@@ -226,6 +245,45 @@ function Circle(x, y, r, static) {
     }
     return data;
   }
+}
+
+function randomConvexPolygon(size) { //returns a string of vectors that make a convex polygon
+  var polyVector = '';
+  var x = 0;
+  var y = 0;
+  var r = 0;
+  var angle = 0;
+  for (var i = 1; i < 60; i++) {
+    angle += 0.1 + Math.random() * massSegment; //change in angle in radians
+    if (angle > 2 * Math.PI) {
+      break; //stop before it becomes convex
+    }
+    r = 2 + Math.random() * 2;
+    x = Math.round(x + r * Math.cos(angle));
+    y = Math.round(y + r * Math.sin(angle));
+    polyVector = polyVector.concat(x * size + ' ' + y * size + ' ');
+  }
+  //console.log(polyVector);
+  return polyVector;
+}
+
+function objectFromVertices(polygonData, x, y, a, static) {
+
+  var vertexSets = [];
+  for(var i = 0; i < polygonData.length; i++){
+    vertexSets.push(Vertices.fromPath(polygonData[i]));
+  } 
+
+  var options = {
+    friction: 0,
+    restitution: 0.15,
+    angle: a,
+    isStatic: static
+  }
+
+  this.body = Bodies.fromVertices(x, y, vertexSets, options);
+  World.add(world, this.body);
+  //console.log(this.body);
 }
 
 function Box(x, y, w, h, a, static) {
