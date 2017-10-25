@@ -10,15 +10,22 @@ To install node modules type
 Next you have also to install matter-js (2D physics engine)  to be run on the server:
 > npm install matter-js
 
-If you start the server you will get an error like this:
+To process custom shapes from SVG files install poly-decomp:
+> npm install poly-decomp
 
-"ReferenceError: HTMLElement is not defined."
+Next go to the file matter.js located on "_your_project_dir_\node_modules\matter-js\build\matter.js"
+Change the line 6483 from:
 
-To correct this error you have to change a function in the matter.js file located at:
+```javascript
+var decomp = _dereq_('poly-decomp/build/decomp.js');
+```
+ To:
+ 
+```javascript
+var decomp = (typeof window !== "undefined" ? window['decomp'] : typeof global !== "undefined" ? global['decomp'] : null);
+```
 
-"_your_project_dir_\node_modules\matter-js\build\matter.js:"
-
-Next go to line 4390 and change the function:
+Also change the function on line 4390 from:
 
 ```javascript
 Common.isElement = function(obj) {
