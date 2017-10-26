@@ -31,6 +31,7 @@ var Engine = Matter.Engine,
   Vertices = Matter.Vertices,
   Vector = Matter.Vector,
   Svg = Matter.Svg,
+  Events = Matter.Events,
   Bodies = Matter.Bodies;
 
 var engine = Engine.create();
@@ -39,6 +40,11 @@ var letterS = "9.170 85.682, 29.420 83.713, 36.838 98.690, 51.920 103.471, 67.07
 var letterV = "136.928 119.221, 100.084 16.143, 122.654 16.143, 148.740 92.432, 173.983 16.143, 196.061 16.143, 159.147 119.221";
 var letterG = "254.772 81.322, 254.772 63.955, 299.631 63.955, 299.631 105.018, 280.682 116.162, 255.545 120.979, 227.350 114.193, 209.279 94.787, 203.233 67.330, 209.983 38.713, 229.740 19.518, 254.420 14.385, 284.408 22.436, 298.295 44.690, 277.623 48.557, 269.432 36.568, 254.420 32.174, 232.729 40.822, 224.678 66.486, 232.834 94.014, 254.209 103.190, 267.322 100.623, 278.608 94.400, 278.608 81.322";
 var platform = "77.508 -45.105, 51.333 -38.091, 34.251 -21.010, 21.767 0.614, 14.443 27.948, 14.443 49.508, 14.443 80.512, 20.217 102.062, 30.479 119.836, 49.031 138.388, 71.851 144.503, 446.875 144.503, 473.911 137.258, 486.434 115.567, 494.291 86.245, 494.291 58.061, 494.291 24.920, 486.630 -3.674, 472.135 -28.779, 451.117 -40.914, 424.728 -47.985";
+
+var platformMask = 0x0001,
+        weirdObjectMask = 0x0002,
+        playerMask = 0x0004,
+        circleMask = 0x0008;
 
 var networkIdStack = [];
 
@@ -55,13 +61,13 @@ function Start(){
     console.log("Start()");
     world.gravity.y = 2;
     console.log("world.gravity " + world.gravity.y);
-    initialStaticObjects.push(new Box(0, 1000, 2000, 50, 0, true));
-    initialStaticObjects.push(new Box(700, 900, 150, 50, 0, true));
-    initialStaticObjects.push(new Box(200, 700, 90, 50, 0, true));
-    initialStaticObjects.push(new Box(300, 800, 110, 50, 0, true));
-    initialStaticObjects.push(new Box(-100, 600, 600, 50, 0, true));
-    initialStaticObjects.push(new Box(400, 500, 80, 50, 0, true));
-    initialStaticObjects.push(new Box(500, 600, 120, 50, 0, true));
+    initialStaticObjects.push(new Platform(0, 1000, 2000, 50, 0, true));
+    initialStaticObjects.push(new Platform(700, 900, 150, 50, 0, true));
+    initialStaticObjects.push(new Platform(200, 700, 90, 50, 0, true));
+    initialStaticObjects.push(new Platform(300, 800, 110, 50, 0, true));
+    initialStaticObjects.push(new Platform(-100, 600, 600, 50, 0, true));
+    initialStaticObjects.push(new Platform(400, 500, 80, 50, 0, true));
+    initialStaticObjects.push(new Platform(500, 600, 120, 50, 0, true));
 
     initialStaticObjects.push(new objectFromVertices([letterS, letterV, letterG], -500, 300, 0, true));
     initialStaticObjects.push(new objectFromVertices([platform], -500, 750, 0, true));
@@ -226,7 +232,11 @@ function Circle(x, y, r, static) {
   var options = {
     friction: 0,
     restitution: 0.8,
-    isStatic: static
+    isStatic: static,
+    collisionFilter: {
+      category: circleMask,
+      mask: platformMask | playerMask | circleMask | weirdObjectMask
+    }
   }
   this.objectNetworkId = networkIdStack.pop();
   this.body = Bodies.circle(x, y, r, options);
@@ -261,12 +271,17 @@ function Circle(x, y, r, static) {
   }
 }
 
-function Box(x, y, w, h, a, static) {
+function Platform(x, y, w, h, a, static) {
   var options = {
     friction: 0,
     restitution: 0.15,
     angle: a,
-    isStatic: static
+    isStatic: static,
+    label = 'platform',
+    collisionFilter: {
+      category: platformMask,
+      mask: circleMask | playerMask
+    }
   }
   this.objectNetworkId = networkIdStack.pop();
   this.body = Bodies.rectangle(x, y, w, h, options);
@@ -291,11 +306,16 @@ function Box(x, y, w, h, a, static) {
 
 function Player(x, y, w, h, a, id, c) {
   var options = {
+    label = 'player',
     friction: 0,
     restitution: 0.12,
     angle: a,
     inertia: Infinity,
-    mass: 10
+    mass: 10,
+    collisionFilter: {
+      category: playerMask,
+      mask: circleMask | playerMask | platformMask
+    }
   }
   this.objectNetworkId = networkIdStack.pop();
   this.color = c;
@@ -376,7 +396,11 @@ function objectFromVertices(polygonData, x, y, a, static) {
     friction: 0,
     restitution: 0.15,
     angle: a,
-    isStatic: static
+    isStatic: static,
+    collisionFilter: {
+                category: weirdObjectMask,
+                mask: circleMask | playerMask
+            }
   }
 
   this.body = Bodies.fromVertices(x, y, vertexSets, options);
