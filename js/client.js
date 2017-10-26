@@ -53,18 +53,6 @@ Client.socket.on('playerPos',function(data){
     Game.setPlayerPos(data);
 });
 
-Client.socket.on('staticObjects',function(data){
-    Game.setStaticObjects(data);
-});
-
-Client.socket.on('dinamicObjects',function(data){
-    Game.setDinamicObjects(data);
-});
-
-Client.socket.on('playerObjects',function(data){
-    Game.setPlayerObjects(data);
-});
-
-Client.socket.on('servermessage',function(message){
-    console.log(message);
+Client.socket.on('serverData',function(dataString){
+    Game.processData(dataString);
 });

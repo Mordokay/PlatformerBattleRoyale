@@ -19,10 +19,9 @@ server.listen(process.env.PORT || 25565,function(){
     console.log('Listening on '+server.address().port);
 });
 
+var initialStaticObjects = [];
 var dinamicObjects = [];
-var staticObjects = [];
 var players = [];
-var weirdShapes = [];
 
 var width = 800;
 var height = 800;
@@ -49,25 +48,19 @@ Start();
 setInterval(function(){Update();}, 1000/60);
 
 function Start(){
-
     console.log("Start()");
-    world.gravity.y = 1.8;
+    world.gravity.y = 2;
     console.log("world.gravity " + world.gravity.y);
-    staticObjects.push(new Box(0, 1000, 2000, 50, 0, true));
-    staticObjects.push(new Box(700, 900, 150, 50, 0, true));
-    staticObjects.push(new Box(200, 700, 90, 50, 0, true));
-    staticObjects.push(new Box(300, 800, 110, 50, 0, true));
-    staticObjects.push(new Box(-100, 600, 600, 50, 0, true));
-    staticObjects.push(new Box(400, 500, 80, 50, 0, true));
-    staticObjects.push(new Box(500, 600, 120, 50, 0, true));
+    initialStaticObjects.push(new Box(0, 1000, 2000, 50, 0, true));
+    initialStaticObjects.push(new Box(700, 900, 150, 50, 0, true));
+    initialStaticObjects.push(new Box(200, 700, 90, 50, 0, true));
+    initialStaticObjects.push(new Box(300, 800, 110, 50, 0, true));
+    initialStaticObjects.push(new Box(-100, 600, 600, 50, 0, true));
+    initialStaticObjects.push(new Box(400, 500, 80, 50, 0, true));
+    initialStaticObjects.push(new Box(500, 600, 120, 50, 0, true));
 
-    var array = ["9.2 85.7", "2.1 83.1", "29.4 83.7"];
-    weirdShapes.push(new objectFromVertices([letterS, letterV, letterG], -500, 300, 0, true));
-
-    weirdShapes.push(new objectFromVertices([platform], -500, 750, 0, true));
-    //weirdShapes.push(new objectFromVertices(letterV, 100, 100, 0, true));
-    //weirdShapes.push(new objectFromVertices(letterG, 100, 100, 0, true));
-
+    initialStaticObjects.push(new objectFromVertices([letterS, letterV, letterG], -500, 300, 0, true));
+    initialStaticObjects.push(new objectFromVertices([platform], -500, 750, 0, true));
 }
 
 function Update(){
@@ -88,17 +81,15 @@ io.on('connection',function(socket){
 
     //sends info to all clients about the position of all dynamic objects
     setInterval(() => {
-        var myDinamicObjects = [];
+        var gameData = "";
         for(var i = 0; i < dinamicObjects.length; i++){
-            myDinamicObjects.push(dinamicObjects[i].getData());
+            gameData += dinamicObjects[i].getData() + " ";
         }
-        io.emit('dinamicObjects', myDinamicObjects);
-
-        var myPlayers = [];
         for(var i = 0; i < players.length; i++){
-            myPlayers.push(players[i].getData());
+            gameData += players[i].getData() + " ";
         }
-        io.emit('playerObjects', myPlayers);
+        var gameData = gameData.slice(0, -1);
+        io.emit('serverData', gameData);
 
         if(typeof socket.player != 'undefined' && 
           typeof getPlayerById(socket.player.id).body != 'undefined'){
@@ -121,16 +112,6 @@ io.on('connection',function(socket){
 
         //sending to the client the playerId
         socket.emit('playerID', socket.player.id);
-
-        var myStaticObjects = [];
-        for(var i = 0; i < staticObjects.length; i++){
-            myStaticObjects.push(staticObjects[i].getData());
-        }
-        io.emit('staticObjects', myStaticObjects);
-
-        // sending to all clients except sender
-        //socket.broadcast.emit('someMessage', someData);
-
     });
 
     socket.on('disconnect',function(){
@@ -212,6 +193,7 @@ function randomIntFromInterval(min,max)
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 
+//c <Posx> <PosY> <Radius>
 function Circle(x, y, r, static) {
   var options = {
     friction: 0,
@@ -237,12 +219,17 @@ function Circle(x, y, r, static) {
   }
 
   this.getData = function(){
+    //c <Posx> <PosY> <Radius>
+    var data = "c " + (Math.round( this.body.position.x * 100 ) / 100) + " " +
+      (Math.round( this.body.position.y * 100 ) / 100) + " " + this.r;
+     /* 
     var data = {
-      t: "circle",
-      x: this.body.position.x,
-      y: this.body.position.y,
+      t: "c",
+      x: Math.round( this.body.position.x * 100 ) / 100,
+      y: Math.round( this.body.position.y * 100 ) / 100,
       r: this.r
     }
+    */
     return data;
   }
 }
@@ -298,15 +285,20 @@ function Box(x, y, w, h, a, static) {
   this.h = h;
   World.add(world, this.body);
 
+  //b <Posx> <PosY> <Width> <Height> <Angle>
   this.getData = function(){
+    var data = "b " + (Math.round( this.body.position.x * 100 ) / 100) + " " +
+      (Math.round( this.body.position.y * 100 ) / 100) + " " + this.w + " " + this.h + " " + this.body.angle;
+/*
     var data = {
       t: "box",
-      x: this.body.position.x,
-      y: this.body.position.y,
+      x: Math.round( this.body.position.x * 100 ) / 100,
+      y: Math.round( this.body.position.y * 100 ) / 100,
       w: this.w,
       h: this.h,
       a: this.body.angle,
     }
+    */
     return data;
   }
 }
@@ -348,18 +340,23 @@ function Player(x, y, w, h, a, id, c) {
   }
 
   this.jump = function(){
-    Body.applyForce(this.body, this.body.position, { x: 0, y: -0.3})
+    Body.applyForce(this.body, this.body.position, { x: 0, y: -0.6})
     this.setVelocity();
   }
 
+  //p <Posx> <PosY> <Angle> <r> <g> <b>
   this.getData = function(){
+    var data = "p " + (Math.round( this.body.position.x * 100 ) / 100) + " " +
+      (Math.round( this.body.position.y * 100 ) / 100) + " " + this.body.angle + " " + this.color.r + " " + this.color.g + " " + this.color.b;
+      /*
     var data = {
       t: "player",
-      x: this.body.position.x,
-      y: this.body.position.y,
+      x: Math.round( this.body.position.x * 100 ) / 100,
+      y: Math.round( this.body.position.y * 100 ) / 100,
       a: this.body.angle,
       c: this.color
     }
+    */
     return data;
   }
 }

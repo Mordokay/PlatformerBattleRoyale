@@ -7,9 +7,7 @@ var loadingImage = false;
 var loading = true;
 var currentImageIndex = 0;
 
-var dinamicObjects = [];
-var staticObjects = [];
-var playerObjects = [];
+var gameObjects = [];
 
 var cameraX = 0;
 var cameraY = 0;
@@ -39,7 +37,7 @@ function loadImageElement(filename, imageWidth, imageHeight) {
   loadImage(filename, imageLoaded);
 
   function imageLoaded(image) {
-    console.log(filename);
+    //console.log(filename);
     image.resize(imageWidth, imageHeight);
     images.push(image);
     counterImage++;
@@ -51,36 +49,21 @@ function loadImageElement(filename, imageWidth, imageHeight) {
 
 function keyTyped() {
   if (key === 'w' || key === ' ') {
-    //console.log('W or SPACE');
     Client.Jump();
   }
   else if (key === 'a') {
-    //console.log('A');
     Client.Left(true);
   }
-  else if (key === 's') {
-    //console.log('A');
-    //DO nothing on S key ... maybe a crouch?
-  }
   else if (key === 'd') {
-    //console.log('D');
     Client.Right(true);
   }
 }
 
 function keyReleased() {
-  if (key === 'W') {
-    //console.log('Released W');
-  }
   if (key === 'A') {
-    //console.log('Released A');
     Client.Left(false);
   }
-  if (key === 'S') {
-    //console.log('Released S');
-  }
   if (key === 'D') {
-    //console.log('Released D');
     Client.Right(false);
   }
 }
@@ -187,6 +170,43 @@ function drawAnimatedStickMan(x, y){
   pop();
 }
 
+//This function draw the bodies initialized on the server
+function drawInitialMap(){
+  var myData;
+  myData = {x: -500, y: 300, shiftX: -138, shiftY: -64, a: 0};
+  drawShape(letterS, myData);
+
+  myData = {x: -500, y: 300, shiftX: -138, shiftY: -64, a: 0};
+  drawShape(letterV, myData);
+
+  myData = {x: -500, y: 300, shiftX: -138, shiftY: -64, a: 0};
+  drawShape(letterG, myData);
+
+  myData = {x: -500, y: 750, shiftX: -258, shiftY: -50, a: 0};
+  drawShape(platform, myData);
+
+  myData = {x: 0, y: 1000, w: 2000, h: 50, a: 0};
+  drawBox(myData);
+
+  myData = {x: 700, y: 900, w: 150, h: 50, a: 0};
+  drawBox(myData);
+
+  myData = {x: 200, y: 700, w: 90, h: 50, a: 0};
+  drawBox(myData);
+
+  myData = {x: 300, y: 800, w: 110, h: 50, a: 0};
+  drawBox(myData);
+
+  myData = {x: -100, y: 600, w: 600, h: 50, a: 0};
+  drawBox(myData);
+
+  myData = {x: 400, y: 500, w: 80, h: 50, a: 0};
+  drawBox(myData);
+
+  myData = {x: 500, y: 600, w: 120, h: 50, a: 0};
+  drawBox(myData);
+}
+
 function draw() {
   background(255, 204, 0);
 
@@ -198,33 +218,24 @@ function draw() {
     //console.log("playerPos: " + playerPos.x + " , " + playerPos.y);
     camera(playerPos.x - (width / 2), playerPos.y - (height / 2), 0);
 
-    for (var i = 0; i < dinamicObjects.length; i++) {
-      drawCircle(dinamicObjects[i]);
+    for (var i = 0; i < gameObjects.length; i++) {
+      switch(gameObjects[i].t){
+        case 'c':
+          drawCircle(gameObjects[i]);
+          break;
+        case 'b':
+          drawBox(gameObjects[i]);
+          break;
+        case 'p':
+          drawPlayer(gameObjects[i]);
+          break;
+      }
     }
-    for (var i = 0; i < staticObjects.length; i++) {
-      drawBox(staticObjects[i]);
-    }
-    for (var i = 0; i < playerObjects.length; i++) {
-      drawPlayer(playerObjects[i]);
-    }
 
-    var myData = {x: -500, y: 300, shiftX: -138, shiftY: -64, a: 0};
-    drawShape(letterS, myData);
-
-    var myData = {x: -500, y: 300, shiftX: -138, shiftY: -64, a: 0};
-    drawShape(letterV, myData);
-
-    var myData = {x: -500, y: 300, shiftX: -138, shiftY: -64, a: 0};
-    drawShape(letterG, myData);
-
-    var myData = {x: -500, y: 750, shiftX: -258, shiftY: -50, a: 0};
-    drawShape(platform, myData);
-    polygon(myData.x, myData.y, 10, 8);
+    drawInitialMap();
 
     drawAnimatedStickMan(100, 600);
-
     drawAnimatedStickMan(-500, 400);
-
     drawAnimatedStickMan(500, 500);
   }
 }
@@ -237,18 +248,36 @@ Game.setPlayerId = function(id){
   playerId = id;
 }
 
-Game.setStaticObjects = function(data){
-  staticObjects = data;
-}
-
-Game.setDinamicObjects = function(data){
-  dinamicObjects = data;
-}
-
-Game.setPlayerObjects = function(data){
-  playerObjects = data;
-}
-
 Game.setPlayerPos = function(data){
   playerPos = data;
+}
+
+Game.processData =  function(dataString){
+  //b <Posx> <PosY> <Width> <Height> <Angle>
+  //p <Posx> <PosY> <Angle> <r> <g> <b>
+  //c <Posx> <PosY> <Radius>
+  var MyData = dataString.split(" ");
+  console.log(MyData);
+  var myGameObjects = [];
+  while (MyData.length > 0){
+    switch(MyData[0]) {
+      case 'b':
+          myGameObjects.push({t: MyData[0], x: MyData[1], y: MyData[2], w: MyData[3], h: MyData[4], a: MyData[5]});
+          MyData.splice(0, 6);
+          break;
+      case 'p':
+          myGameObjects.push({t: MyData[0], x: MyData[1], y: MyData[2], a: MyData[3], c: {r: MyData[4],g: MyData[5],b: MyData[6]}});
+          MyData.splice(0, 7);
+          break;
+      case 'c':
+          myGameObjects.push({t: MyData[0], x: MyData[1], y: MyData[2], r: MyData[3]});
+          MyData.splice(0, 4);
+          break;
+      default:
+          console.log("going default!!!!");
+          MyData.splice(0, MyData.length);
+          break;
+    }
+  }
+  gameObjects = myGameObjects;
 }
