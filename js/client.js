@@ -7,10 +7,6 @@ Client.socket.on('connect_error', function() {
 });
 
 //This is what the client sends to the server
-Client.sendTest = function(){
-    Client.socket.emit('test');
-};
-
 Client.Left = function(isLeftDown){
     if(isLeftDown){
         Client.socket.emit('L_DOWN');
@@ -45,14 +41,24 @@ Client.getAllPlayers = function(){
 };
 
 //This is what the client recieves from the server
-Client.socket.on('playerID',function(id){
-    Game.setPlayerId(id);
+Client.socket.on('playerNetworkID',function(id){
+    Game.setPlayerNetworkId(id);
 });
 
-Client.socket.on('playerPos',function(data){
-    Game.setPlayerPos(data);
+Client.socket.on('initialElements',function(dataString){
+    Game.initializeElements(dataString);    
+});
+
+Client.socket.on('addElement',function(dataString){
+    Game.addElement(dataString);
+    //console.log("addElement");
+    //console.log(dataString);
 });
 
 Client.socket.on('serverData',function(dataString){
     Game.processData(dataString);
+});
+
+Client.socket.on('removeElement',function(elementID){
+    Game.removeElement(elementID);
 });

@@ -12,8 +12,7 @@ var gameObjects = [];
 var cameraX = 0;
 var cameraY = 0;
 
-var playerId;
-var playerPos = {x: 0, y: 0};
+var playerNetworkId;
 
 var letterS = "9.170 85.682, 29.420 83.713, 36.838 98.690, 51.920 103.471, 67.072 99.217, 72.170 89.268, 70.025 83.045, 62.537 78.580, 45.873 74.080, 22.389 63.885, 12.897 43.143, 17.361 28.412, 30.229 17.971, 50.514 14.385, 79.729 22.893, 90.029 45.604, 69.217 46.518, 63.486 35.092, 50.303 31.611, 36.100 35.338, 32.795 41.736, 35.889 47.994, 55.014 54.885, 77.479 62.303, 88.869 72.779, 92.983 89.197, 88.061 105.791, 74.139 117.287, 51.709 121.049, 21.686 112.014, 9.170 85.682";
 var letterV = "136.928 119.221, 100.084 16.143, 122.654 16.143, 148.740 92.432, 173.983 16.143, 196.061 16.143, 159.147 119.221";
@@ -51,10 +50,10 @@ function keyTyped() {
   if (key === 'w' || key === ' ') {
     Client.Jump();
   }
-  else if (key === 'a') {
+  else if (key === 'a' || key === 'A') {
     Client.Left(true);
   }
-  else if (key === 'd') {
+  else if (key === 'd' || key === 'D') {
     Client.Right(true);
   }
 }
@@ -69,8 +68,8 @@ function keyReleased() {
 }
 
 function mouseClicked() {
-  var data = {x: winMouseX + playerPos.x - (windowWidth / 2),
-   y: winMouseY + playerPos.y  - (windowHeight / 2)};
+  var data = {x: winMouseX + parseInt(gameObjects[playerNetworkId].x) - (windowWidth / 2),
+   y: winMouseY + parseInt(gameObjects[playerNetworkId].y)  - (windowHeight / 2)};
   //console.log("mouseX: " + mouseX + " mouseY: " + mouseY);
   //console.log("winMouseX: " + winMouseX + " winMouseY: " + winMouseY);
   //console.log("windowWidth: " + windowWidth + " windowHeight " + windowHeight);
@@ -216,27 +215,31 @@ function draw() {
 
   if(!loading){
     //console.log("playerPos: " + playerPos.x + " , " + playerPos.y);
-    camera(playerPos.x - (width / 2), playerPos.y - (height / 2), 0);
+    camera(gameObjects[playerNetworkId].x - (width / 2), gameObjects[playerNetworkId].y - (height / 2), 0);
+
+    //console.log(gameObjects);
 
     for (var i = 0; i < gameObjects.length; i++) {
-      switch(gameObjects[i].t){
-        case 'c':
-          drawCircle(gameObjects[i]);
-          break;
-        case 'b':
-          drawBox(gameObjects[i]);
-          break;
-        case 'p':
-          drawPlayer(gameObjects[i]);
-          break;
+      if(gameObjects[i]){
+        switch(gameObjects[i].t){
+          case 'c':
+            drawCircle(gameObjects[i]);
+            break;
+          case 'b':
+            drawBox(gameObjects[i]);
+            break;
+          case 'p':
+            drawPlayer(gameObjects[i]);
+            break;
+        }
       }
     }
 
     drawInitialMap();
 
-    drawAnimatedStickMan(100, 600);
-    drawAnimatedStickMan(-500, 400);
-    drawAnimatedStickMan(500, 500);
+    //drawAnimatedStickMan(100, 600);
+    //drawAnimatedStickMan(-500, 400);
+    //drawAnimatedStickMan(500, 500);
   }
 }
 
@@ -244,40 +247,53 @@ function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
 }
 
-Game.setPlayerId = function(id){
-  playerId = id;
+Game.setPlayerNetworkId = function(id){
+  playerNetworkId = id;
 }
 
-Game.setPlayerPos = function(data){
-  playerPos = data;
+Game.addElement = function(elementData){
+  //b <objectNetworkId> <Posx> <PosY> <Width> <Height> <Angle>
+  //p <objectNetworkId> <Posx> <PosY> <Angle> <r> <g> <b>
+  //c <objectNetworkId> <Posx> <PosY> <Radius>
+  var MyData = elementData.split(" ");
+  console.log("initialized element with id: " + MyData[1]);
+  switch(MyData[0]) {
+      case 'b':
+          gameObjects[MyData[1]] = {t: MyData[0], networkId: MyData[1], x: MyData[2], y: MyData[3], w: MyData[4], h: MyData[5], a: MyData[6]};
+          break;
+      case 'p':
+          gameObjects[MyData[1]] = {t: MyData[0], networkId: MyData[1], x: MyData[2], y: MyData[3], a: MyData[4], c: {r: MyData[5],g: MyData[6],b: MyData[7]}};
+          break;
+      case 'c':
+          gameObjects[MyData[1]] = {t: MyData[0], networkId: MyData[1], x: MyData[2], y: MyData[3], r: MyData[4]};
+          break;
+      default:
+          break;
+    }
 }
 
 Game.processData =  function(dataString){
-  //b <Posx> <PosY> <Width> <Height> <Angle>
-  //p <Posx> <PosY> <Angle> <r> <g> <b>
-  //c <Posx> <PosY> <Radius>
-  var MyData = dataString.split(" ");
-  console.log(MyData);
-  var myGameObjects = [];
-  while (MyData.length > 0){
-    switch(MyData[0]) {
-      case 'b':
-          myGameObjects.push({t: MyData[0], x: MyData[1], y: MyData[2], w: MyData[3], h: MyData[4], a: MyData[5]});
-          MyData.splice(0, 6);
-          break;
-      case 'p':
-          myGameObjects.push({t: MyData[0], x: MyData[1], y: MyData[2], a: MyData[3], c: {r: MyData[4],g: MyData[5],b: MyData[6]}});
-          MyData.splice(0, 7);
-          break;
-      case 'c':
-          myGameObjects.push({t: MyData[0], x: MyData[1], y: MyData[2], r: MyData[3]});
-          MyData.splice(0, 4);
-          break;
-      default:
-          console.log("going default!!!!");
-          MyData.splice(0, MyData.length);
-          break;
+  //console.log(dataString);
+  //<objectNetworkId> <Posx> <PosY>
+  //<objectNetworkId> <Posx> <PosY>
+  //<objectNetworkId> <Posx> <PosY>
+  var myData = dataString.split(",");
+  for(var i = 0; i < myData.length; i++){
+    var newPos = myData[i].split(" ");
+    if(gameObjects[newPos[0]] != null){
+      gameObjects[newPos[0]].x = newPos[1];
+      gameObjects[newPos[0]].y = newPos[2];
     }
   }
-  gameObjects = myGameObjects;
+}
+
+Game.removeElement = function(elementID){
+  gameObjects[elementID] = null;
+}
+
+Game.initializeElements = function(dataString){
+  var myData = dataString.split(",");
+  for(var i = 0; i < myData.length; i++){
+    Game.addElement(myData[i]);
+  }
 }
