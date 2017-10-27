@@ -158,6 +158,21 @@ function polygon(x, y, radius, npoints) {
   endShape(CLOSE);
 }
 
+function drawGrid(){
+  //lines have 4000 of length
+
+  for (var i = -2000; i <= 2000; i += 50){
+    if(i == 0){
+      stroke(color(255, 0, 0));
+    }
+    else{
+      stroke(255);
+    }
+    line(i, -2000, i, 2000);
+    line(-2000, i, 2000, i);
+  }
+}
+
 //This function draw the bodies initialized on the server
 function drawInitialMap(){  
   var myData;
@@ -202,6 +217,7 @@ function draw() {
   }
 
   drawInitialMap();
+  drawGrid();
 
   for (var i = 0; i < gameObjects.length; i++) {
     if(gameObjects[i]){

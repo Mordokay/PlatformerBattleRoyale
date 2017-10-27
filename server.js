@@ -61,8 +61,8 @@ Events.on(engine, 'collisionActive', function(event) {
   for (i = 0; i < length; i++) {
     pair = event.pairs[i];
 
-    if((pair.bodyA.label.match("player") && pair.bodyB.label.match("platform")) || 
-        (pair.bodyA.label.match("platform") && pair.bodyB.label.match("player"))){
+    if((pair.bodyA.label.match("player") && pair.bodyB.label.match("latform")) || 
+        (pair.bodyA.label.match("latform") && pair.bodyB.label.match("player"))){
 
       if(pair.bodyA.label.match("player")){
         var nameAndId = pair.bodyA.label.split(",");
