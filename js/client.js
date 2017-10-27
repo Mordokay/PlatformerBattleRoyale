@@ -51,8 +51,6 @@ Client.socket.on('initialElements',function(dataString){
 
 Client.socket.on('addElement',function(dataString){
     Game.addElement(dataString);
-    //console.log("addElement");
-    //console.log(dataString);
 });
 
 Client.socket.on('serverData',function(dataString){

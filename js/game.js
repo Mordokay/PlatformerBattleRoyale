@@ -1,12 +1,5 @@
 var Game = {};
 
-var images = [];
-var totalImages = 40;
-var counterImage = 0;
-var loadingImage = false;
-var loading = true;
-var currentImageIndex = 0;
-
 var gameObjects = [];
 
 var cameraX = 0;
@@ -26,32 +19,14 @@ var star = "162.500 294.862, 101.230 262.953, 40.209 295.336, 51.622 227.204, 1.
 
 function setup() {
   Client.askNewPlayer();
-  //canvas = createCanvas(800, 800);
   canvas = createCanvas(windowWidth,windowHeight);
 
   //Should I force the frame rate?
   //frameRate(60);
 
-  for (var i = 1; i <= totalImages; i++) {
-    loadImageElement("assets/images/anim" + i + ".png", 300, 300);
-  }
   starImage = loadImage("assets/star.png");
   svgImage = loadImage("assets/svg.png");
   platformImage = loadImage("assets/platform.png");
-}
-
-function loadImageElement(filename, imageWidth, imageHeight) {
-  loadImage(filename, imageLoaded);
-
-  function imageLoaded(image) {
-    //console.log(filename);
-    image.resize(imageWidth, imageHeight);
-    images.push(image);
-    counterImage++;
-    if (counterImage == totalImages) {
-      loadingImage = true;
-    }
-  }
 }
 
 function keyTyped() {
@@ -78,9 +53,7 @@ function keyReleased() {
 function mouseClicked() {
   var data = {x: winMouseX + parseInt(gameObjects[playerNetworkId].x) - (windowWidth / 2),
    y: winMouseY + parseInt(gameObjects[playerNetworkId].y)  - (windowHeight / 2)};
-  //console.log("mouseX: " + mouseX + " mouseY: " + mouseY);
-  //console.log("winMouseX: " + winMouseX + " winMouseY: " + winMouseY);
-  //console.log("windowWidth: " + windowWidth + " windowHeight " + windowHeight);
+
   Client.sendMouseClick(data);
 }
 
@@ -154,21 +127,23 @@ function drawShape(shapeString, data){
   pop();
 }
 
-function drawStar(posX, posY){
-  var shiftX = -85;
-  var shiftY = -67;  
-  image(starImage, posX + shiftX, posY + shiftY);
+function drawStar(posX, posY, w, h){
+  var shiftX = -85 * w;
+  var shiftY = -67 * h;
+  image(starImage, posX + shiftX, posY + shiftY, starImage.width * w, starImage.height * h);
 }
 
-function drawSVG(posX, posY){
-  var shiftX = -130;
-  var shiftY = -53;
-  image(svgImage, posX + shiftX, posY + shiftY);
+function drawSVG(posX, posY, w, h){
+  var shiftX = -130 * w;
+  var shiftY = -53 * h;
+  image(svgImage, posX + shiftX, posY + shiftY, svgImage.width * w, svgImage.height * h);
 }
 
-function drawPlatform(posX, posY, scaleX, scaleY){
-  var shiftX = -242;
-  var shiftY = -97;
+function drawPlatform(posX, posY, w, h){
+  var scaleX = 0.265 * w;
+  var scaleY = 0.265* h;
+  var shiftX = -242 * w;
+  var shiftY = -97 * h;
   image(platformImage, posX + shiftX, posY + shiftY, platformImage.width * scaleX, platformImage.height * scaleY);
 }
 
@@ -183,26 +158,10 @@ function polygon(x, y, radius, npoints) {
   endShape(CLOSE);
 }
 
-function drawAnimatedStickMan(x, y){
-  push();
-  translate(x, y);
-  if(currentImageIndex == images.length){
-    currentImageIndex = 0;
-  }
-  image(images[currentImageIndex], 0, 0);
-  currentImageIndex++;
-  polygon(0, 0, 5, 8);
-  pop();
-}
-
 //This function draw the bodies initialized on the server
 function drawInitialMap(){  
-  drawSVG(-500, 300);
-  drawStar(100, 300);
-  drawPlatform(-500, 750, 0.265 , 0.265);
-
   var myData;
-  myData = {x: 0, y: 1000, w: 2000, h: 50, a: 0};
+  myData = {x: 0, y: 1000, w: 4000, h: 50, a: 0};
   drawBox(myData);
 
   myData = {x: 700, y: 900, w: 150, h: 50, a: 0};
@@ -222,44 +181,51 @@ function drawInitialMap(){
 
   myData = {x: 500, y: 600, w: 120, h: 50, a: 0};
   drawBox(myData);
+
+  //vertical walls (for wall jump):
+  drawBox({x: 1000, y: 900, w: 50, h: 400, a: 0});
+  drawBox({x: 1300, y: 600, w: 50, h: 400, a: 0});
+  drawBox({x: 1600, y: 300, w: 50, h: 400, a: 0});
+
+  drawBox({x: 1900, y: 0, w: 50, h: 400, a: 0});
+
+  drawBox({x: 1600, y: -300, w: 50, h: 400, a: 0});
+  drawBox({x: 1300, y: -600, w: 50, h: 400, a: 0});
+  drawBox({x: 1000, y: -900, w: 50, h: 400, a: 0});
 }
 
 function draw() {
-  background(255, 204, 0);
+  background(50, 50, 200);
 
-  if (loadingImage) {
-    loading = false;
+  if(typeof gameObjects[playerNetworkId] != 'undefined'){
+    camera(gameObjects[playerNetworkId].x - (width / 2), gameObjects[playerNetworkId].y - (height / 2), 0);
   }
 
-  if(!loading){
-    //console.log("playerPos: " + playerPos.x + " , " + playerPos.y);
-    if(typeof gameObjects[playerNetworkId] != 'undefined'){
-      camera(gameObjects[playerNetworkId].x - (width / 2), gameObjects[playerNetworkId].y - (height / 2), 0);
-    }
+  drawInitialMap();
 
-    //console.log(gameObjects);
-
-    for (var i = 0; i < gameObjects.length; i++) {
-      if(gameObjects[i]){
-        switch(gameObjects[i].t){
-          case 'c':
-            drawCircle(gameObjects[i]);
-            break;
-          case 'b':
-            drawBox(gameObjects[i]);
-            break;
-          case 'p':
-            drawPlayer(gameObjects[i]);
-            break;
-        }
+  for (var i = 0; i < gameObjects.length; i++) {
+    if(gameObjects[i]){
+      switch(gameObjects[i].t){
+        case 'c':
+          drawCircle(gameObjects[i]);
+          break;
+        case 'b':
+          drawBox(gameObjects[i]);
+          break;
+        case 'p':
+          drawPlayer(gameObjects[i]);
+          break;
+        case 'star':
+          drawStar(parseInt(gameObjects[i].x), parseInt(gameObjects[i].y), parseFloat(gameObjects[i].w), parseFloat(gameObjects[i].h));
+          break;
+        case 'weirdPlatform':
+          drawPlatform(parseInt(gameObjects[i].x), parseInt(gameObjects[i].y), parseFloat(gameObjects[i].w), parseFloat(gameObjects[i].h));
+          break;
+        case 'svg':
+          drawSVG(parseInt(gameObjects[i].x), parseInt(gameObjects[i].y), parseFloat(gameObjects[i].w), parseFloat(gameObjects[i].h));
+          break;
       }
     }
-
-    drawInitialMap();
-
-    //drawAnimatedStickMan(100, 600);
-    //drawAnimatedStickMan(-500, 400);
-    //drawAnimatedStickMan(500, 500);
   }
 }
 
@@ -275,21 +241,34 @@ Game.addElement = function(elementData){
   //b <objectNetworkId> <Posx> <PosY> <Width> <Height> <Angle>
   //p <objectNetworkId> <Posx> <PosY> <Angle> <r> <g> <b>
   //c <objectNetworkId> <Posx> <PosY> <Radius>
+  //<label> <objectNetworkId> <Posx> <PosY> <w> <h>
+  //<label>: 'star' | 'svg' | 'weirdPlatform'
+
   var MyData = elementData.split(" ");
-  console.log("initialized element with id: " + MyData[1]);
+  //console.log("initialized element with id: " + MyData[1]);
   switch(MyData[0]) {
-      case 'b':
-          gameObjects[MyData[1]] = {t: MyData[0], networkId: MyData[1], x: MyData[2], y: MyData[3], w: MyData[4], h: MyData[5], a: MyData[6]};
-          break;
-      case 'p':
-          gameObjects[MyData[1]] = {t: MyData[0], networkId: MyData[1], x: MyData[2], y: MyData[3], a: MyData[4], c: {r: MyData[5],g: MyData[6],b: MyData[7]}};
-          break;
-      case 'c':
-          gameObjects[MyData[1]] = {t: MyData[0], networkId: MyData[1], x: MyData[2], y: MyData[3], r: MyData[4]};
-          break;
-      default:
-          break;
-    }
+    case 'b':
+      gameObjects[MyData[1]] = {t: MyData[0], networkId: MyData[1], x: MyData[2], y: MyData[3], w: MyData[4], h: MyData[5], a: MyData[6]};
+      break;
+    case 'p':
+      gameObjects[MyData[1]] = {t: MyData[0], networkId: MyData[1], x: MyData[2], y: MyData[3], a: MyData[4], c: {r: MyData[5],g: MyData[6],b: MyData[7]}};
+      break;
+    case 'c':
+      gameObjects[MyData[1]] = {t: MyData[0], networkId: MyData[1], x: MyData[2], y: MyData[3], r: MyData[4]};
+      break;
+    case 'star':
+      gameObjects[MyData[1]] = {t: MyData[0], networkId: MyData[1], x: MyData[2], y: MyData[3], w: MyData[4], h: MyData[5]};
+      break;
+    case 'svg':
+      gameObjects[MyData[1]] = {t: MyData[0], networkId: MyData[1], x: MyData[2], y: MyData[3], w: MyData[4], h: MyData[5]};
+      break;
+    case 'weirdPlatform':
+      gameObjects[MyData[1]] = {t: MyData[0], networkId: MyData[1], x: MyData[2], y: MyData[3], w: MyData[4], h: MyData[5]};
+      break;
+    default:
+      break;
+  }
+  //console.log(gameObjects);
 }
 
 Game.processData =  function(dataString){
@@ -297,6 +276,7 @@ Game.processData =  function(dataString){
   //<objectNetworkId> <Posx> <PosY>
   //<objectNetworkId> <Posx> <PosY>
   //<objectNetworkId> <Posx> <PosY>
+
   var myData = dataString.split(",");
   for(var i = 0; i < myData.length; i++){
     var newPos = myData[i].split(" ");
@@ -309,9 +289,11 @@ Game.processData =  function(dataString){
 
 Game.removeElement = function(elementID){
   gameObjects[elementID] = null;
+  //console.log(gameObjects);
 }
 
 Game.initializeElements = function(dataString){
+  //console.log(dataString);
   var myData = dataString.split(",");
   for(var i = 0; i < myData.length; i++){
     Game.addElement(myData[i]);

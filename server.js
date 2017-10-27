@@ -52,47 +52,120 @@ var networkIdStack = [];
 Start();
 setInterval(function(){Update();}, 1000/60);
 
+
 Events.on(engine, 'collisionActive', function(event) {
+
   var i, pair,
   length = event.pairs.length;
 
   for (i = 0; i < length; i++) {
     pair = event.pairs[i];
-    console.log(pair.bodyA.label + " is colliding with  " + pair.bodyB.label);
 
-    if(pair.bodyA.label == 'player' && pair.bodyB.label == 'star' || 
-      pair.bodyA.label == 'star' && pair.bodyB.label == 'player'){
-      console.log("Condition verified!!! You can now remove the star and add points to the player");
+    if((pair.bodyA.label.match("player") && pair.bodyB.label.match("platform")) || 
+        (pair.bodyA.label.match("platform") && pair.bodyB.label.match("player"))){
+
+      if(pair.bodyA.label.match("player")){
+        var nameAndId = pair.bodyA.label.split(",");
+        setPlayerJumpState(nameAndId[1], true);
+      }
+      else{
+        var nameAndId = pair.bodyB.label.split(",");
+        setPlayerJumpState(nameAndId[1], true);
+      }
     }
-    /*
-    if (!(pair.bodyA.label === 'Player' || pair.bodyB.label === 'Player')) {
-      continue;
-    }
-    Matter.Events.trigger(player.body, 'collision', { pair : pair });
-    */
   }
 });
 
+Events.on(engine, 'collisionEnd', function(event) {
+  var i, pair,
+  length = event.pairs.length;
+
+  for (i = 0; i < length; i++) {
+    pair = event.pairs[i];
+
+    if((pair.bodyA.label.match("player") && pair.bodyB.label.match("latform")) || 
+        (pair.bodyA.label.match("latform") && pair.bodyB.label.match("player"))){
+
+      if(pair.bodyA.label.match("player")){
+        var nameAndId = pair.bodyA.label.split(",");
+        setPlayerJumpState(nameAndId[1], false);
+      }
+      else{
+        var nameAndId = pair.bodyB.label.split(",");
+        setPlayerJumpState(nameAndId[1], false);
+      }
+    }
+  }
+});
+
+Events.on(engine, 'collisionStart', function(event) {
+  var i, pair,
+  length = event.pairs.length;
+
+  for (i = 0; i < length; i++) {
+    pair = event.pairs[i];
+    
+    if(pair.bodyA.label.match("player") || pair.bodyB.label.match("player")){
+
+      if(pair.bodyA.label.match("star")){
+        var nameAndId = pair.bodyA.label.split(",");
+        removeObjectWithNetworkId(nameAndId[1]);
+      }
+      else if(pair.bodyB.label.match("star")){
+        var nameAndId = pair.bodyB.label.split(",");
+        removeObjectWithNetworkId(nameAndId[1]);
+      }
+    }
+  }
+});
+
+function removeObjectWithNetworkId(id){
+  for(var i = 0; i < dinamicObjects.length; i++){
+    if(dinamicObjects[i].objectNetworkId == id){
+      dinamicObjects[i].removeFromWorld();
+      io.sockets.emit('removeElement', id);
+      freeNetworkID(id);
+      dinamicObjects.splice(i, 1);
+    }
+  }
+}
+ 
+function setPlayerJumpState(networkId, state){
+  for(var i = 0; i < players.length; i++){
+    if(players[i].objectNetworkId == networkId){
+      players[i].canJump = state;
+    }
+  }
+}
+
 function Start(){
     //initialize 50 diferent networkIDs
-    for(var i = 50; i > 0; i--){
+    for(var i = 60; i >= 0; i--){
       networkIdStack.push(i);
     }
 
     console.log("Start()");
     world.gravity.y = 2;
     console.log("world.gravity " + world.gravity.y);
-    initialStaticObjects.push(new Platform(0, 1000, 2000, 50, 0, true));
-    initialStaticObjects.push(new Platform(700, 900, 150, 50, 0, true));
-    initialStaticObjects.push(new Platform(200, 700, 90, 50, 0, true));
-    initialStaticObjects.push(new Platform(300, 800, 110, 50, 0, true));
-    initialStaticObjects.push(new Platform(-100, 600, 600, 50, 0, true));
-    initialStaticObjects.push(new Platform(400, 500, 80, 50, 0, true));
-    initialStaticObjects.push(new Platform(500, 600, 120, 50, 0, true));
+    initialStaticObjects.push(new Platform(0, 1000, 4000, 50, 0, true, false));
+    initialStaticObjects.push(new Platform(700, 900, 150, 50, 0, true, false));
+    initialStaticObjects.push(new Platform(200, 700, 90, 50, 0, true, false));
+    initialStaticObjects.push(new Platform(300, 800, 110, 50, 0, true, false));
+    initialStaticObjects.push(new Platform(-100, 600, 600, 50, 0, true, false));
+    initialStaticObjects.push(new Platform(400, 500, 80, 50, 0, true, false));
+    initialStaticObjects.push(new Platform(500, 600, 120, 50, 0, true, false));
 
-    initialStaticObjects.push(new objectFromVertices([letterS_Coords, letterV_Coords, letterG_Coords], -500, 300, 0, true, "SVG"));
-    initialStaticObjects.push(new objectFromVertices([platform_Coords], -500, 750, 0, true, "weirdPlatform"));
-    initialStaticObjects.push(new objectFromVertices([star_Coords], 100, 300, 0, true, "star"));
+    initialStaticObjects.push(new Platform(1000, 900, 50, 400, 0, true, false));
+    initialStaticObjects.push(new Platform(1300, 600, 50, 400, 0, true, false));
+    initialStaticObjects.push(new Platform(1600, 300, 50, 400, 0, true, false));
+
+    initialStaticObjects.push(new Platform(1900, 0, 50, 400, 0, true, false));
+
+    initialStaticObjects.push(new Platform(1600, -300, 50, 400, 0, true, false));
+    initialStaticObjects.push(new Platform(1300, -600, 50, 400, 0, true, false));
+    initialStaticObjects.push(new Platform(1000, -900, 50, 400, 0, true, false));
+
+    initializeDinamicElements();
 }
 
 function Update(){
@@ -142,14 +215,12 @@ io.on('connection',function(socket){
 
         var initialElements = "";
         for(var i = 0; i < dinamicObjects.length; i++){
-            //if(Vector.magnitude(dinamicObjects[i].body.velocity) > 0.01){
-              initialElements += dinamicObjects[i].getData() + ",";
-            //}
+          initialElements += dinamicObjects[i].getData() + ",";
         }
         for(var i = 0; i < players.length; i++){
-            if(!players[i].body.isSleeping){
-              initialElements += players[i].getData() + ";";
-            }
+          if(!players[i].body.isSleeping){
+            initialElements += players[i].getData() + ";";
+          }
         }
         var initialElements = initialElements.slice(0, -1);
         socket.emit('initialElements', initialElements);
@@ -170,7 +241,7 @@ io.on('connection',function(socket){
             io.sockets.emit('removeElement', players[i].objectNetworkId);
             freeNetworkID(players[i].objectNetworkId);
             players.splice(i, 1);
-            i--;
+            break;
           }
         }
         console.log("player with id: " + socket.player.id + " disconected!!!");
@@ -183,7 +254,7 @@ io.on('connection',function(socket){
     
     socket.on('mouseClick', function(data){
       if(networkIdStack.length>0){
-        var myCircle = new Circle(data.x, data.y, randomIntFromInterval(4, 6), false)
+        var myCircle = new Circle(data.x, data.y, randomIntFromInterval(15, 16), false)
         dinamicObjects.push(myCircle);
         io.sockets.emit('addElement', myCircle.getData());
       }
@@ -211,6 +282,47 @@ io.on('connection',function(socket){
       getPlayerById(socket.player.id).jump(-0.04);
     });
 });
+
+function  initializeDinamicElements(){
+  var myObject;
+
+  myObject = new objectFromVertices([letterS_Coords, letterV_Coords, letterG_Coords], -500, 300, 1.5, 1.5, 0, true, "svg", true);
+  //sockets.emit('addElement', myObject.getData());
+  //dinamicObjects.push(myObject);
+
+  myObject = new objectFromVertices([platform_Coords], -700, 750, 0.5, 0.5, 0, true, "weirdPlatform", true)
+  myObject = new objectFromVertices([platform_Coords], -1000, 600, 0.9, 0.5, 0, true, "weirdPlatform", true)
+  //sockets.emit('addElement', myObject.getData());
+  //dinamicObjects.push(myObject);
+
+  myObject = new objectFromVertices([star_Coords], 0, 550, 0.18, 0.18, 0, true, "star", true)
+  //sockets.emit('addElement', myObject.getData());
+  //dinamicObjects.push(myObject);
+
+  myObject = new objectFromVertices([star_Coords], 700, 850, 0.18, 0.18, 0, true, "star", true);
+  myObject = new objectFromVertices([star_Coords], 650, 850, 0.18, 0.18, 0, true, "star", true);
+  myObject = new objectFromVertices([star_Coords], 750, 850, 0.18, 0.18, 0, true, "star", true);
+
+  myObject = new objectFromVertices([star_Coords], 175, 650, 0.18, 0.18, 0, true, "star", true);
+  myObject = new objectFromVertices([star_Coords], 225, 650, 0.18, 0.18, 0, true, "star", true);
+
+  myObject = new objectFromVertices([star_Coords], 275, 750, 0.18, 0.18, 0, true, "star", true);
+  myObject = new objectFromVertices([star_Coords], 325, 750, 0.18, 0.18, 0, true, "star", true);
+
+  myObject = new objectFromVertices([star_Coords], -100, 550, 0.18, 0.18, 0, true, "star", true);
+  myObject = new objectFromVertices([star_Coords], -50, 550, 0.18, 0.18, 0, true, "star", true);
+  myObject = new objectFromVertices([star_Coords], 0, 550, 0.18, 0.18, 0, true, "star", true);
+  myObject = new objectFromVertices([star_Coords], -150, 550, 0.18, 0.18, 0, true, "star", true);
+  myObject = new objectFromVertices([star_Coords], -200, 550, 0.18, 0.18, 0, true, "star", true);
+
+  myObject = new objectFromVertices([star_Coords], 375, 450, 0.18, 0.18, 0, true, "star", true);
+  myObject = new objectFromVertices([star_Coords], 425, 450, 0.18, 0.18, 0, true, "star", true);
+
+  myObject = new objectFromVertices([star_Coords], 500, 550, 0.18, 0.18, 0, true, "star", true);
+  myObject = new objectFromVertices([star_Coords], 450, 550, 0.18, 0.18, 0, true, "star", true);
+  myObject = new objectFromVertices([star_Coords], 550, 550, 0.18, 0.18, 0, true, "star", true);
+  
+}
 
 function freeNetworkID(networkID){
   console.log('Free networkID: ' + networkID);
@@ -293,7 +405,7 @@ function Circle(x, y, r, static) {
   }
 }
 
-function Platform(x, y, w, h, a, static) {
+function Platform(x, y, w, h, a, static, hasNetworkIdentity) {
   var options = {
     friction: 0,
     restitution: 0.15,
@@ -305,7 +417,12 @@ function Platform(x, y, w, h, a, static) {
       mask: circleMask | playerMask | weirdObjectMask
     }
   }
-  this.objectNetworkId = networkIdStack.pop();
+  this.objectNetworkId = -1;
+
+  if(hasNetworkIdentity){
+    this.objectNetworkId = networkIdStack.pop();
+  }
+
   this.body = Bodies.rectangle(x, y, w, h, options);
   this.w = w;
   this.h = h;
@@ -327,19 +444,21 @@ function Platform(x, y, w, h, a, static) {
 }
 
 function Player(x, y, w, h, a, id, c) {
+  this.objectNetworkId = networkIdStack.pop();
   var options = {
-    label: 'player',
+    label: "player," + this.objectNetworkId,
     friction: 0,
     restitution: 0.12,
     angle: a,
     inertia: Infinity,
     mass: 10,
+    isStatic: false,
     collisionFilter: {
       category: playerMask,
       mask: circleMask | playerMask | platformMask | weirdObjectMask
     }
   }
-  this.objectNetworkId = networkIdStack.pop();
+  this.canJump = false;
   this.color = c;
   this.pressingLeft = false;
   this.pressingRight = false;
@@ -356,10 +475,10 @@ function Player(x, y, w, h, a, id, c) {
   this.setVelocity = function(){
     var myVelocityX = 0;
     if(this.pressingLeft && !this.pressingRight){
-      myVelocityX = -6;
+      myVelocityX = -8;
     }
     else if(!this.pressingLeft && this.pressingRight){
-      myVelocityX = 6;
+      myVelocityX = 8;
     }
     Body.setVelocity(this.body, {
           x: myVelocityX,
@@ -368,8 +487,11 @@ function Player(x, y, w, h, a, id, c) {
   }
 
   this.jump = function(){
-    Body.applyForce(this.body, this.body.position, { x: 0, y: -0.6})
-    this.setVelocity();
+    if(this.canJump){
+      this.body.velocity.y = 0;
+      Body.applyForce(this.body, this.body.position, { x: 0, y: -0.8})
+      this.setVelocity();
+    }
   }
 
   //p <objectNetworkId> <Posx> <PosY> <Angle> <r> <g> <b>
@@ -407,18 +529,30 @@ function randomConvexPolygon(size) { //returns a string of vectors that make a c
   return polyVector;
 }
 
-function objectFromVertices(polygonData, x, y, a, static, label) {
+function objectFromVertices(polygonData, x, y, w, h, a, static, label, hasNetworkIdentity) {
 
   var vertexSets = [];
+  this.labelName = label;
+  var myLabel = label;
+
   for(var i = 0; i < polygonData.length; i++){
     vertexSets.push(Vertices.fromPath(polygonData[i]));
-  } 
+  }
+
+  this.objectNetworkId = 0;
+  if(hasNetworkIdentity){
+    this.objectNetworkId = networkIdStack.pop();
+    myLabel += "," + this.objectNetworkId;
+  }
+  this.w = w;
+  this.h = h;
+
   var options = {
     friction: 0,
     restitution: 0.15,
     angle: a,
     isStatic: static,
-    label: label,
+    label: myLabel,
     collisionFilter: {
                 category: weirdObjectMask,
                 mask: circleMask | playerMask
@@ -426,5 +560,32 @@ function objectFromVertices(polygonData, x, y, a, static, label) {
   }
 
   this.body = Bodies.fromVertices(x, y, vertexSets, options);
+  Body.scale(this.body, w, h);
   World.add(world, this.body);
+
+  this.removeFromWorld = function() {
+    World.remove(world, this.body);
+  }
+
+  //<label> <objectNetworkId> <Posx> <PosY>
+  this.getData = function(){
+    var data = this.labelName + " " + this.objectNetworkId + " " + (Math.round( this.body.position.x * 100 ) / 100) + " " +
+      (Math.round( this.body.position.y * 100 ) / 100) + " " + w + " " + h;
+    return data;
+  }
+
+  //<label> <objectNetworkId> <Posx> <PosY>
+  this.getPosUpdate = function(){
+    var data = this.labelName + " " + this.objectNetworkId + " " + (Math.round( this.body.position.x * 100 ) / 100) + " " +
+      (Math.round( this.body.position.y * 100 ) / 100);
+    return data;
+  }
+
+  this.isOffScreen = function() {
+    return false;
+  }
+
+  if(hasNetworkIdentity){
+    dinamicObjects.push(this);
+  }
 }
